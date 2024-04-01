@@ -9,7 +9,7 @@ all:$(PROG)
        
 desktop_app: desktop_app.cpp $(AOBJS)
 	gsettings set org.gnome.mutter check-alive-timeout 150000
-	$(CC) $(CFLAGS) -o $@ $^ $(WX-CFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^ -fopenmp $(WX-CFLAGS) $(LIBS)
 
 %.o : %.cpp %.h
 	$(CC) -c $(CFLAGS) $< -o $@  $(LIBS)
