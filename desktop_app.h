@@ -6,16 +6,14 @@
 
 int numGridRows = 25;
 int numGridCols = 6;
-
 bool isHorizontal = false;
 bool isSEM = false;
 bool outputToCsv = false;
-int ncount = 200;
-std::string finalFlynotyperText;
-std::string countStr;
+int nCount = 200;
+std::string flynotyperResult;
+std::string nCountStr;
 wxTextCtrl *countInput;
 wxNotebook *notebook;
-wxStaticText *placeholderText;
 wxGrid *grid;
 
 class FlynotyperApp : public wxApp
@@ -30,9 +28,6 @@ public:
     FlynotyperFrame();
     
 private:
-    wxStaticText *flynotyperText = new wxStaticText(this, wxID_HIGHEST + 1, "",
-        wxPoint(0, 600), wxSize(400, 100), wxALIGN_LEFT, wxStaticTextNameStr);
-    
     void OnExit(wxCommandEvent& event);
     void OnHorizontalCheck(wxCommandEvent& event);
     void OnSEMCheck(wxCommandEvent& event);
