@@ -162,7 +162,7 @@ void FlynotyperFrame::OnOpenImage(wxCommandEvent& event)
     // Run flynotyper on all images
     flynotyperResult = "";
     
-    // #pragma omp parallel for
+    #pragma omp parallel for
     for(int i = 0; i < paths.GetCount(); i++)
     {   
         std::string output = flynotyper(paths.Item(i).ToStdString(), isSEM, isHorizontal, nCount);
