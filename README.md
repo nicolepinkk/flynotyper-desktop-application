@@ -2,8 +2,9 @@
 A desktop application that provides an easy-to-use GUI for flynotyper
 
 # Software Dependencies
-1. OpenCV-4
-2. WxWidgets (version 3.2)
+1. OpenCV-4 (https://docs.opencv.org/4.x/df/d65/tutorial_table_of_content_introduction.html)
+2. WxWidgets (version 3.2) (https://www.wxwidgets.org/downloads/)
+3. gcc/g++ (version 11.4.0 or greater)
 
 # Installation
 ## Mac & Linux
