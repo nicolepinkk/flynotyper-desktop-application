@@ -12,4 +12,5 @@ Download the repository from here. Open a terminal and enter the directory where
 
 # Example
 The example images provided were used in the following study:
+
 Singh MD, Jensen M, Lasser M, Huber E, Yusuff T, et al. (2020) NCBP2 modulates neurodevelopmental defects of the 3q29 deletion in Drosophila and Xenopus laevis models. PLOS Genetics 16(2): e1008590. https://doi.org/10.1371/journal.pgen.1008590
