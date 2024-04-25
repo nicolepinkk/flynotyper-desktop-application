@@ -8,7 +8,10 @@
 #ifndef IENTROPY_H
 #define	IENTROPY_H
 
+#define _USE_MATH_DEFINES
+
 #include <opencv2/opencv.hpp>
+#include <math.h>
 // #include <cv.h>
 
 using namespace cv;
