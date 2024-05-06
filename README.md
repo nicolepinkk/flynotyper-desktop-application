@@ -6,6 +6,7 @@ A desktop application that provides an easy-to-use GUI for Flynotyper
 2. WxWidgets (version 3.2) (https://www.wxwidgets.org/downloads/)
 3. GCC (version 11.4.0 or higher)
 4. CMake (version 2.6 or higher)
+5. GTK (version 3.0 or higher)
 
 # Installation
 ## Mac & Linux
