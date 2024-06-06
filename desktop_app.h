@@ -2,30 +2,34 @@
 #include <wx/gbsizer.h>
 #include <wx/notebook.h>
 #include <wx/grid.h>
+#include <wx/gauge.h>
 #include <fstream>
+#include <string>
 
 int numGridRows = 25;
 int numGridCols = 6;
 bool isHorizontal = false;
 bool isSEM = false;
 bool outputToCsv = false;
+bool killThread = false;
 int nCount = 200;
 std::string flynotyperResult;
 std::string nCountStr;
 wxTextCtrl *countInput;
 wxNotebook *notebook;
 wxGrid *grid;
+wxGauge *gauge;
 
-class FlynotyperApp : public wxApp
+class DesktopApp : public wxApp
 {
 public:
     bool OnInit() override;
 };
 
-class FlynotyperFrame : public wxFrame
+class DesktopFrame : public wxFrame
 {
 public:
-    FlynotyperFrame();
+    DesktopFrame();
     
 private:
     void OnExit(wxCommandEvent& event);
@@ -33,6 +37,8 @@ private:
     void OnSEMCheck(wxCommandEvent& event);
     void OnCsvCheck(wxCommandEvent& event);
     void OnOpenImage(wxCommandEvent& event);
+
+    // FlynotyperThread m_flynotyperThread;
 };
 
 enum
