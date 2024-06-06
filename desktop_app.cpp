@@ -1,18 +1,115 @@
 #include "desktop_app.h"
 #include "flynotyper.cpp"
 
-wxIMPLEMENT_APP(FlynotyperApp);
-
-bool FlynotyperApp::OnInit()
+void doFlynotyper(const wxString& path)
 {
-    FlynotyperFrame *frame = new FlynotyperFrame();
+    std::string output = flynotyper(path.ToStdString(), isSEM, isHorizontal, nCount);
+
+    std::stringstream ss(path.ToStdString());
+    std::string str;
+    std::string file;
+    while(getline(ss, str, '/'))
+    {
+        file = str;
+    }
+
+    flynotyperResult += file + "\t" + output + "\n"; 
+}
+
+class FlynotyperThread : public wxThread
+{
+public:
+    FlynotyperThread() : wxThread(wxTHREAD_DETACHED) {}
+
+    virtual void *Entry() override
+    {   
+        #pragma omp parallel for
+        for(int i = 0; i < m_inputArray.GetCount(); i++)
+        {
+            doFlynotyper(m_inputArray[i]) ;           
+        }
+
+        if(m_inputArray.GetCount() < numGridRows)
+        {
+            grid->DeleteRows(m_inputArray.GetCount() - 1, numGridRows - m_inputArray.GetCount());
+        }
+        else if(m_inputArray.GetCount() > numGridRows)
+        {
+            grid->AppendRows(m_inputArray.GetCount() - numGridRows);
+        }
+        numGridRows = m_inputArray.GetCount();
+        
+        std::stringstream ssNewline(flynotyperResult);
+        std::string strNewline;
+        int row = 0;
+        int col = 0;
+
+        // Show output from flynotyper
+        while(getline(ssNewline, strNewline, '\n'))
+        {
+            std::stringstream ssTab(strNewline);
+            std::string strTab;
+            while(getline(ssTab, strTab, '\t'))
+            {
+                grid->SetCellValue(row, col, strTab);
+                col++;
+            }
+            col = 0;
+            row++;
+        }
+
+        if(outputToCsv)
+        {
+            std::ofstream output_file;
+            output_file.open("output.csv");
+            output_file << "Sample,ODId,ODIa,ODI,Z,P\n";
+            
+            int i = 0;
+            while(i < numGridRows)
+            {
+                int j = 0;
+                while(j < numGridCols)
+                {
+                    output_file << grid->GetCellValue(i, j) << ",";
+                    j++;
+                }
+                output_file << "\n";
+                i++;
+            }
+        }
+
+        killThread = true;
+        
+        wxCommandEvent event(wxEVT_COMMAND_MENU_SELECTED, wxID_ANY);
+        wxPostEvent(m_parent, event);
+        return nullptr;
+    }
+
+    void SetParent(wxFrame* parent)
+    {
+        m_parent = parent;
+    }
+
+    void SetInputString(wxArrayString inputArray)
+    {
+        m_inputArray = inputArray;
+    }
+private:
+    wxFrame* m_parent;
+    wxArrayString m_inputArray;
+    std::string m_flynotyperResult;
+};
+
+bool DesktopApp::OnInit()
+{
+    DesktopFrame *frame = new DesktopFrame();
     wxFont font(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
     frame->SetFont(font);
     frame->Show();
     return true;
 }
 
-FlynotyperFrame::FlynotyperFrame() : wxFrame(nullptr, wxID_ANY, "Flynotyper")
+DesktopFrame::DesktopFrame() : wxFrame(nullptr, wxID_ANY, "Flynotyper")
 {   
     Maximize();
 
@@ -103,35 +200,41 @@ FlynotyperFrame::FlynotyperFrame() : wxFrame(nullptr, wxID_ANY, "Flynotyper")
     mainSizer->Add(panel, 1, wxEXPAND | wxALL, margin);
     this->SetSizerAndFit(mainSizer);
     
-    Bind(wxEVT_MENU, &FlynotyperFrame::OnExit, this, wxID_EXIT);
-    Bind(wxEVT_BUTTON, &FlynotyperFrame::OnOpenImage, this, ID_Submit_Button);
-    Bind(wxEVT_CHECKBOX, &FlynotyperFrame::OnCsvCheck, this, ID_Csv_Checkbox);
-    Bind(wxEVT_CHECKBOX, &FlynotyperFrame::OnHorizontalCheck, this, ID_Hor_Checkbox);
-    Bind(wxEVT_CHECKBOX, &FlynotyperFrame::OnSEMCheck, this, ID_Sem_Checkbox);
+    Bind(wxEVT_MENU, &DesktopFrame::OnExit, this, wxID_EXIT);
+    Bind(wxEVT_BUTTON, &DesktopFrame::OnOpenImage, this, ID_Submit_Button);
+    Bind(wxEVT_CHECKBOX, &DesktopFrame::OnCsvCheck, this, ID_Csv_Checkbox);
+    Bind(wxEVT_CHECKBOX, &DesktopFrame::OnHorizontalCheck, this, ID_Hor_Checkbox);
+    Bind(wxEVT_CHECKBOX, &DesktopFrame::OnSEMCheck, this, ID_Sem_Checkbox);
 }
 
-void FlynotyperFrame::OnExit(wxCommandEvent& event)
+void DesktopFrame::OnExit(wxCommandEvent& event)
 {
     Close(true);
 }
 
-void FlynotyperFrame::OnHorizontalCheck(wxCommandEvent& event)
+void DesktopFrame::OnHorizontalCheck(wxCommandEvent& event)
 {    
     isHorizontal = !isHorizontal;
 }
 
-void FlynotyperFrame::OnSEMCheck(wxCommandEvent& event)
+void DesktopFrame::OnSEMCheck(wxCommandEvent& event)
 {
     isSEM = !isSEM;
 }
 
-void FlynotyperFrame::OnCsvCheck(wxCommandEvent& event)
+void DesktopFrame::OnCsvCheck(wxCommandEvent& event)
 {
     outputToCsv = !outputToCsv;
 }
 
-void FlynotyperFrame::OnOpenImage(wxCommandEvent& event)
+void DesktopFrame::OnOpenImage(wxCommandEvent& event)
 {   
+    FlynotyperThread *f_thread = new FlynotyperThread();
+    killThread = false;
+    
+    f_thread->SetParent(this);
+    f_thread->Create();
+    
     // Update n-count based on user input
     nCountStr = countInput->GetValue();
     if(nCountStr != "")
@@ -144,9 +247,9 @@ void FlynotyperFrame::OnOpenImage(wxCommandEvent& event)
     }
     
     // Initialize or reset text field that shows application status
-    wxStaticText *m_statictext = new wxStaticText(this, wxID_HIGHEST + 1, "",
-        wxPoint(0, 600), wxSize(400, 100), wxALIGN_LEFT, wxStaticTextNameStr);;
-    m_statictext->SetLabel("Calculating results. Please wait...");
+    // wxStaticText *m_statictext = new wxStaticText(this, wxID_HIGHEST + 1, "",
+    //     wxPoint(0, 600), wxSize(400, 100), wxALIGN_LEFT, wxStaticTextNameStr);
+    // m_statictext->SetLabel("Calculating results. Please wait...");
     
     wxFileDialog dialog(this, "Open Image File", "", "", "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff)|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff", wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
     
@@ -161,71 +264,15 @@ void FlynotyperFrame::OnOpenImage(wxCommandEvent& event)
 
     // Run flynotyper on all images
     flynotyperResult = "";
+
+    f_thread->SetInputString(paths);
+    f_thread->Run();
     
-    #pragma omp parallel for
-    for(int i = 0; i < paths.GetCount(); i++)
-    {   
-        std::string output = flynotyper(paths.Item(i).ToStdString(), isSEM, isHorizontal, nCount);
-
-        std::stringstream ss(paths.Item(i).ToStdString());
-        std::string str;
-        std::string file;
-        while(getline(ss, str, '/'))
-        {
-            file = str;
-        }
-
-        flynotyperResult += file + "\t" + output + "\n";
-    }
-
-    m_statictext->SetLabel("Calculations complete!");
-
-    if(paths.GetCount() < numGridRows)
+    if (killThread) 
     {
-        grid->DeleteRows(paths.GetCount() - 1, numGridRows - paths.GetCount());
-    }
-    else if(paths.GetCount() > numGridRows)
-    {
-        grid->AppendRows(paths.GetCount() - numGridRows);
-    }
-    numGridRows = paths.GetCount();
-    
-    std::stringstream ssNewline(flynotyperResult);
-    std::string strNewline;
-    int row = 0;
-    int col = 0;
-
-    // Show output from flynotyper
-    while(getline(ssNewline, strNewline, '\n'))
-    {
-        std::stringstream ssTab(strNewline);
-        std::string strTab;
-        while(getline(ssTab, strTab, '\t'))
-        {
-            grid->SetCellValue(row, col, strTab);
-            col++;
-        }
-        col = 0;
-        row++;
-    }
-
-    if(outputToCsv)
-    {
-        std::ofstream output_file;
-        output_file.open("output.csv");
-        output_file << "Sample,ODId,ODIa,ODI,Z,P\n";
-        
-        int i = 0;
-        while(i < numGridRows)
-        {
-            int j = 0;
-            while(j < numGridCols)
-            {
-                output_file << grid->GetCellValue(i, j) << ",";
-                j++;
-            }
-            output_file << "\n";
-            i++;
-        }
+        f_thread->Delete();
+        delete f_thread;
     }
 }
+
+wxIMPLEMENT_APP(DesktopApp);
